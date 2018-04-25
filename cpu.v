@@ -24,7 +24,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	wire [`WORD_SIZE-1:0] data2;
 
 	output [`WORD_SIZE-1:0] num_inst;
-	wire [`WORD_SIZE-1:0] num_inst;
+	reg [`WORD_SIZE-1:0] num_inst;
 	output [`WORD_SIZE-1:0] output_port;
 	wire [`WORD_SIZE-1:0] output_port;
 	output is_halted;
@@ -103,22 +103,33 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	wire ID_flush;
 	wire Stall_flush;
 	wire flush;
+//---------------------------------------------
+	always @(reset_n) begin
+		num_inst = 0;
+	end
+
+	always @(posedge clk) begin
+		if (IFID_WriteEn) begin
+			num_inst = num_inst + 1;
+		end
+	end
+
 //----------------------------------------------
-	//call PC
-	PC_Register PC_call(clk, PCin, PC_WriteEn, PC);
+	//PC update
+	PC_Register PC_update(clk, reset_n, PCin, PC_WriteEn, PC);
 
 	//add 4 to PC
-	ADD ADD_PC_4(PC,16'h0004,IF_PC4);
+	ADD ADD_PC_4(PC,16'h0001,IF_PC4);
+
+	assign readM1 = 1'b1;
+	assign address1 = PC;
 
 	//Instruction Memory - Instruction in data1
 	Memory IF(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, data2);
-
-	//PC update
-	PC_Register PC_update(clk, PCin, PC_WriteEn, PC);
 //-------------------------------------------------------------------
 	//IF_ID Register
 	assign IF_instruction = data1;
-	IFID_Register IFID_register_update(clk, IF_PC4, IF_instruction , IF_flush, IFID_WriteEn, ID_PC4, ID_instruction);
+	IFID_Register IFID_register_update(clk, reset_n, IF_PC4, IF_instruction , IF_flush, IFID_WriteEn, ID_PC4, ID_instruction, IFID_flush);
 	
 	//ControlUnit
 	assign opcode = ID_instruction[15:12];
@@ -133,7 +144,8 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	assign ID_rt=ID_instruction[9:8];
 	assign ID_rd =ID_instruction[7:6];
 	registerHandle register_file_call(WB_RegWrite, ID_rs, ID_rt, WB_WriteRegister, WB_WriteData, readData1, readData2, clk, reset_n);
-	
+	assign output_port = readData1;
+
 	//signExtend
 	assign ID_immediate = ID_instruction[7:0];
 	SignExtend immediate_extend(ID_immediate, im16_ext);
@@ -145,7 +157,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	
 //-----------------------------------------------
 	//ID_EX Register
-	IDEX_Register IDEX_Register_update(clk, ID_PC4, ID_ControlInput, readData1, readData2, im16_ext, ID_rs, ID_rt, ID_rd, JRControl, JLControl, //control and data input
+	IDEX_Register IDEX_Register_update(clk, reset_n, ID_PC4, ID_ControlInput, readData1, readData2, im16_ext, ID_rs, ID_rt, ID_rd, JRControl, JLControl, //control and data input
 		     WB, MEM, //bunch output
 		     EX_Branch, EX_ALUSrc, EX_RegDst, EX_opcode, EX_funct, EX_JRControl, EX_JLControl, //control output
 		     EX_PC4, EX_im16_ext, EX_ReadData1, EX_ReadData2, EX_rs, EX_rt, EX_rd);
@@ -175,11 +187,11 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	assign JumpFlush = Jump&(~IFID_flush);
 	assign PCjControl = JumpFlush&bneControl;
 	sixteenBitMultiplexer2to1 MUX_bneControl(IF_PC4,branch_addr,bneControl,EX_PC1);
-	sixteenBitMultiplexer2to1 MUX_PCjControl(PCj,EX_PC1,EX_PCjControl,EX_PC2);//******
+	sixteenBitMultiplexer2to1 MUX_PCjControl(EX_PC1,PCj,EX_PCjControl,EX_PC2);//******
 	sixteenBitMultiplexer2to1 MUX_EX_JRControl(EX_PC2,BusA_ALU,EX_JRControl,PCin);
 
 //----------------------------------------------------------------
-	EXMEM_Register EXMEM_Register_update(clk, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarded, EX_WriteRegister, EX_JLControl, // input
+	EXMEM_Register EXMEM_Register_update(clk, reset_n, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarded, EX_WriteRegister, EX_JLControl, // input
 		      WB_forwarded, MEM_MemWrite, MEM_MemRead, // control output
 		      MEM_PC4, MEM_ALUResult, MEM_BusB_forwarded, MEM_WriteRegister, MEM_JLControl); // data output
 	
@@ -194,18 +206,18 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	ForwardingUnit ForwardingUnit_call(MEM_WriteRegister, MEM_RegWrite, WB_WriteRegister, WB_RegWrite, EX_rs, EX_rt, ForwardA, ForwardB);
 
 //------------------------------------------------------------------------
-	MEMWB_Register MEMWB_Register_update(clk, WB_forwarded, MEM_PC4, MEM_ReadDataOfMem, MEM_ALUResult, MEM_WriteRegister, MEM_JLControl,// input
+	MEMWB_Register MEMWB_Register_update(clk, reset_n, WB_forwarded, MEM_PC4, MEM_ReadDataOfMem, MEM_ALUResult, MEM_WriteRegister, MEM_JLControl,// input
 		      WB_RegWrite, WB_MemtoReg, // control output
 		      WB_PC4, WB_ReadDataOfMem, WB_ALUResult, WB_WriteRegister, WB_JLControl); // data output
 	
 	//Choose WB_WriteData
-	sixteenBitMultiplexer2to1 MUX_WB_WriteData_tmp(WB_ReadDataOfMem, WB_ALUResult, WB_MemtoReg, WB_WriteData_tmp);
+	sixteenBitMultiplexer2to1 MUX_WB_WriteData_tmp(WB_ALUResult, WB_ReadDataOfMem, WB_MemtoReg, WB_WriteData_tmp);
 	sixteenBitMultiplexer2to1 MUX_WB_WriteData(WB_WriteData_tmp, WB_PC4, WB_JLControl, WB_WriteData);
 
 //----------------------------------------------------------------------------
 	//DiscardInstruction, Stall, flush
 	DiscardInstruction discard_inst(Jump, bneControl, JRControl, IF_flush, ID_flush);
-	StallUnit stall(EX_MemRead, EX_rt, ID_rs, ID_rt, opcode, PC_WriteEn, IFID_WriteEn, Stall_flush);
+	StallUnit stall(MEM[0], EX_rt, ID_rs, ID_rt, opcode, PC_WriteEn, IFID_WriteEn, Stall_flush);
 	Flush flush_call(IFID_flush, ID_flush, Stall_flush, flush);
 	
 

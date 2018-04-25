@@ -1,7 +1,8 @@
-module EXMEM_Register(clk, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarded, EX_WriteRegister, EX_JLControl, // input
+module EXMEM_Register(clk, reset_n, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarded, EX_WriteRegister, EX_JLControl, // input
 		      WB_forwarded, MEM_MemWrite, MEM_MemRead, // control output
 		      MEM_PC4, MEM_ALUResult, MEM_BusB_forwarded, MEM_WriteRegister, MEM_JLControl); // data output
 	input clk;
+	input reset_n;
 	input [1:0] WB;
 	input [1:0] MEM;
 	input [15:0] EX_PC4, EX_ALUResult, BusB_forwarded;
@@ -12,6 +13,17 @@ module EXMEM_Register(clk, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarded, EX_Wri
 	output reg [15:0] MEM_PC4, MEM_ALUResult, MEM_BusB_forwarded;
 	output reg [1:0] MEM_WriteRegister;
 	output reg MEM_JLControl;
+
+	always @(reset_n) begin
+		WB_forwarded = 2'b00;
+		MEM_MemWrite = 1'b0;
+		MEM_MemRead = 1'b0;
+		MEM_PC4 = 16'h0000;
+		MEM_ALUResult = 16'h0000;
+		MEM_BusB_forwarded = 16'h0000;
+		MEM_WriteRegister = 2'b00;
+		MEM_JLControl = 1'b0;
+	end
 
 	always @(posedge clk) begin
 		WB_forwarded = WB;
