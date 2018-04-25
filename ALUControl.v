@@ -21,17 +21,18 @@
 `define OP_BLZ  4'b1111
 
 //ALU Control Input Module 
-module aluControl (aluOp, funct, opcode, aluControlInput);//should be dependent on state register
-	input [3:0] aluOp;
+module aluControl (funct, opcode, aluControlInput);//should be dependent on state register
+	//input [3:0] aluOp;
 	input [5:0] funct;
 	input [3:0] opcode;
 	output reg [3:0] aluControlInput;
 	
-	always @(aluOp) begin
-		if (aluOp == 4'b0000) begin
-			aluControlInput = 4'b0000;
-		end
-		else if ((opcode == 4'b1111)&&(funct <= 4'b0111)) begin //R-Type instructions
+	always @(funct) begin
+		//if (aluOp == 4'b0000) begin
+		//	aluControlInput = 4'b0000;
+		//end
+		//else 
+		if ((opcode == 4'b1111)&&(funct <= 4'b0111)) begin //R-Type instructions
 			aluControlInput = funct[3:0];
 		end
 		else begin

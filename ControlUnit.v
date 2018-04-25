@@ -1,8 +1,9 @@
 //module Control unit
-module ControlUnit(opcode, funct, ControlInput);
+module ControlUnit(opcode, funct, ControlInput,Jump);
 	input [3:0]opcode;
 	input [5:0]funct;
 	output [16:0] ControlInput;
+	output Jump;
 
 	reg RegWrite;
 	reg MemtoReg;
@@ -11,6 +12,8 @@ module ControlUnit(opcode, funct, ControlInput);
 	reg Branch;
 	reg ALUSrc;
 	reg RegDst;
+
+	assign Jump = (opcode == 4'b1001)||(opcode == 4'b1010)? 1:0;// Jmp, JAl
 
 	always @(*) begin
 		RegWrite = 1'b0;

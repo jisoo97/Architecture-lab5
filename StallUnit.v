@@ -1,8 +1,8 @@
 module StallUnit(EX_MemRead, EX_rt, ID_rs, ID_rt, opcode, PC_WriteEn, IFID_WriteEn, Stall_flush);
 	input EX_MemRead;
-	input EX_rt;
-	input ID_rs;
-	input ID_rt;
+	input [1:0]EX_rt;
+	input [1:0]ID_rs;
+	input [1:0]ID_rt;
 	input [3:0] opcode;
 	output PC_WriteEn;
 	output IFID_WriteEn;
