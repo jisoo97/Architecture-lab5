@@ -12,18 +12,22 @@ module IFID_Register(clk, reset_n, IF_PC4, IF_instruction, IF_flush, IFID_WriteE
 	always @(reset_n) begin
 		ID_PC4 = 16'h0000;
 		ID_instruction = 16'h0000;
-		IFID_flush = 1'b0;
+		IFID_flush = 1'b1;
 	end
 
 	always @(posedge clk) begin
-		if (IF_flush) begin
+		/*if (IF_flush) begin
 			ID_PC4 = 16'h0000;
 			ID_instruction = 16'hb000;
-		end
-		else if (IFID_WriteEn) begin
+			if (IFID_WriteEn) begin	
+				IFID_flush = IF_flush;
+			end
+			
+		end*/
+		if (IFID_WriteEn) begin
+			IFID_flush = IF_flush;
 			ID_PC4 = IF_PC4;
 			ID_instruction = IF_instruction;
-			IFID_flush = IF_flush;
 		end
 	end 
 endmodule

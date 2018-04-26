@@ -109,7 +109,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 		num_inst = 0;
 	end
 
-	reg ID_valid;
+	wire ID_valid;
 	reg EX_valid;
 	reg MEM_valid;
 	reg WB_valid;
@@ -117,7 +117,6 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	reg [1:0]WB_rs;
 
 	always @(reset_n) begin
-		ID_valid = 1'b0;
 		EX_valid = 1'b0;
 		MEM_valid = 1'b0;
 		WB_valid = 1'b0;
@@ -126,8 +125,9 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 		WB_rs = 2'b00;
 	end
 
+	assign ID_valid = ~flush;
+
 	always @(posedge clk) begin
-		ID_valid <= ~flush;
 		EX_valid <= ID_valid;
 		MEM_valid <= EX_valid;
 		WB_valid <= MEM_valid;
@@ -137,7 +137,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	end
 
 	always @(posedge clk) begin
-		if (WB_valid==1'b1) begin
+		if (MEM_valid==1'b1) begin
 			num_inst = num_inst + 1;
 		end
 	end
