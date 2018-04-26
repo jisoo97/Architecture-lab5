@@ -1,12 +1,14 @@
 //register part
-module registerHandle(regWrite, readReg1, readReg2, writeReg, writeData, readData1, readData2, clk, reset_n);
+module registerHandle(regWrite, readReg1, readReg2, writeReg, writeData, WB_rs, readData1, readData2, output_port, clk, reset_n);
 	input regWrite;
 	input [1:0]readReg1;
 	input [1:0]readReg2;
 	input [1:0]writeReg;
 	input [15:0]writeData;
+	input [1:0]WB_rs;
 	output reg [15:0]readData1;
 	output reg [15:0]readData2;
+	output [15:0]output_port;
 	input clk;
 	input reset_n;
 
@@ -39,5 +41,7 @@ module registerHandle(regWrite, readReg1, readReg2, writeReg, writeData, readDat
 			readData2 = regfile[readReg2];
 		end
 	end
+	
+	assign output_port = regfile[WB_rs];
 endmodule	
 // internal forwarding for WB!!

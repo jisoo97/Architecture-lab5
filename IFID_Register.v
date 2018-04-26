@@ -18,7 +18,7 @@ module IFID_Register(clk, reset_n, IF_PC4, IF_instruction, IF_flush, IFID_WriteE
 	always @(posedge clk) begin
 		if (IF_flush) begin
 			ID_PC4 = 16'h0000;
-			ID_instruction = 16'h0000;
+			ID_instruction = 16'hb000;
 		end
 		else if (IFID_WriteEn) begin
 			ID_PC4 = IF_PC4;

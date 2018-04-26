@@ -9,6 +9,8 @@ module ForwardingUnit (MEM_WriteRegister, MEM_RegWrite, WB_WriteRegister, WB_Reg
 	output reg [1:0] ForwardB;
 
 	always @(*) begin
+		ForwardA = 2'b00;
+		ForwardB = 2'b00;
 		if (MEM_RegWrite == 1'b1) begin
 			if (MEM_WriteRegister == EX_rs) begin
 				ForwardA = 2'b10;

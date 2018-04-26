@@ -24,9 +24,11 @@ module ControlUnit(opcode, funct, ControlInput,Jump);
 		ALUSrc = 1'b0;
 		RegDst = 1'b0;
 		case (opcode)
-			4'b1111: begin// R type
-				RegWrite = 1'b1;
-				RegDst = 1'b1;
+			4'b1111: begin
+				if (funct <= 4'b0111) begin// R type
+					RegWrite = 1'b1;
+					RegDst = 1'b1;
+				end
 			end
 			4'b0000: begin// BNE
 				Branch = 1'b1;
