@@ -244,7 +244,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 
 //----------------------------------------------------------------------------
 	//DiscardInstruction, Stall, flush
-	DiscardInstruction discard_inst(Jump, bneControl, JRControl, IF_flush, ID_flush);
+	DiscardInstruction discard_inst(Jump, bneControl, EX_JRControl, IF_flush, ID_flush);
 	StallUnit stall(MEM[0], EX_rt, ID_rs, ID_rt, opcode, PC_WriteEn, IFID_WriteEn, Stall_flush);
 	Flush flush_call(IFID_flush, ID_flush, Stall_flush, flush);
 	

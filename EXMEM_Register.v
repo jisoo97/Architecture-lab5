@@ -31,6 +31,7 @@ module EXMEM_Register(clk, reset_n, WB, MEM, EX_PC4, EX_ALUResult, BusB_forwarde
 		WB_forwarded = WB;
 		MEM_MemWrite = MEM[1];
 		MEM_MemRead = MEM[0];
+		MEM_RegWrite = WB_forwarded[1];
 		MEM_PC4 = EX_PC4;
 		MEM_ALUResult = EX_ALUResult;
 		MEM_BusB_forwarded = BusB_forwarded;

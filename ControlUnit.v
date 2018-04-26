@@ -29,6 +29,9 @@ module ControlUnit(opcode, funct, ControlInput,Jump);
 					RegWrite = 1'b1;
 					RegDst = 1'b1;
 				end
+				else if (funct == 6'b011010) begin
+					RegWrite = 1'b1;
+				end
 			end
 			4'b0000: begin// BNE
 				Branch = 1'b1;
@@ -65,7 +68,9 @@ module ControlUnit(opcode, funct, ControlInput,Jump);
 				ALUSrc = 1'b1;
 			end
 			4'b1001: ;// JMP
-			4'b1010: ;// JAL
+			4'b1010: begin// JAL
+				RegWrite = 1'b1;
+			end
 			default: ;
 		endcase
 	end
