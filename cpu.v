@@ -104,6 +104,8 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	wire ID_flush;
 	wire Stall_flush;
 	wire flush;
+
+
 //---------------------------------------------Output code
 	always @(reset_n) begin
 		num_inst = 0;
@@ -141,6 +143,17 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 			num_inst = num_inst + 1;
 		end
 	end
+
+//---------------------------------------------is_halted code
+	wire halt;
+	reg EX_halt, MEM_halt, WB_halt;
+	assign halt = (opcode == 4'b1111) && (funct == 6'b011101);
+	always @(posedge clk) begin
+		EX_halt <= halt;
+		MEM_halt <= EX_halt;
+		WB_halt <= MEM_halt;
+	end
+	assign is_halted = ((WB_halt == 1'b1) && (WB_valid == 1'b1));
 
 //----------------------------------------------
 	//PC update
