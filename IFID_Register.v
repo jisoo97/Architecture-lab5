@@ -28,6 +28,9 @@ module IFID_Register(clk, reset_n, IF_PC4, IF_instruction, IF_flush, IFID_WriteE
 			IFID_flush = IF_flush;
 			ID_PC4 = IF_PC4;
 			ID_instruction = IF_instruction;
+			if (IF_flush) begin
+				ID_instruction = 16'hb000;
+			end
 		end
 	end 
 endmodule

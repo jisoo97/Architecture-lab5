@@ -27,7 +27,7 @@ module aluControl (funct, opcode, aluControlInput);//should be dependent on stat
 	input [3:0] opcode;
 	output reg [3:0] aluControlInput;
 	
-	always @(funct) begin
+	always @(*) begin
 		//if (aluOp == 4'b0000) begin
 		//	aluControlInput = 4'b0000;
 		//end
