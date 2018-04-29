@@ -75,7 +75,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	wire [`WORD_SIZE-1:0] EX_ALUResult;
 	wire [1:0] EX_RegDstResult;
 	wire [1:0] EX_WriteRegister;
-	wire bneControl;
+	wire mispredict;
 	wire [`WORD_SIZE-1:0] PC1,PC2,PCj;
 	wire Jump, JumpFlush;
 	//MEM
@@ -155,9 +155,40 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	end
 	assign is_halted = ((WB_halt == 1'b1) && (WB_valid == 1'b1));
 
+//----------------------------------------------2 bit global predictor with BTB
+	wire [15:0] EX_PC = EX_PC4-1;
+	wire valid;
+	wire [9:0] tag;
+	wire [15:0] nextPC;
+	BTB btb(clk, reset_n, PC[5:0], mispredict, EX_PC, branch_addr, valid, tag, nextPC);
+	
+	wire prediction;
+	Predictor pred(clk, reset_n, EX_Branch, bcond, prediction);
+
+	
+	wire [15:0] newPC;
+	wire hit = (tag == PC[15:6]);
+	wire newPCControl;
+	assign newPCControl = (hit==1'b1 && prediction == 1'b1 && valid == 1'b1);
+
+	assign newPC = newPCControl ? nextPC : PCin;
+
+	reg ID_newPCControl, EX_newPCControl;
+
+	always @(reset_n) begin
+		ID_newPCControl <= 1'b0;
+		EX_newPCControl <= 1'b0;
+	end
+
+	always @(posedge clk) begin
+		ID_newPCControl <= newPCControl;
+		EX_newPCControl <= ID_newPCControl;
+	end
+
+
 //----------------------------------------------
 	//PC update
-	PC_Register PC_update(clk, reset_n, PCin, PC_WriteEn, PC);
+	PC_Register PC_update(clk, reset_n, newPC, PC_WriteEn, PC);
 
 	//add 4 to PC
 	ADD ADD_PC_4(PC,16'h0001,IF_PC4);
@@ -223,11 +254,14 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 	twoBitMultiplexer2to1 MUX_EX_JLContorl(EX_RegDstResult, 2'b10, EX_JLControl, EX_WriteRegister);
 	
 	//UPPER branch part
-	assign bneControl = EX_Branch&bcond;
+	wire [15:0] PCb;
+	assign branchControl = EX_Branch&bcond;
+	assign mispredict = (EX_newPCControl ^ branchControl); //in fact it's misprediction
 	assign JumpFlush = Jump&(~IFID_flush);
-	assign PCjControl = JumpFlush&(~bneControl);
+	assign PCjControl = JumpFlush&(~mispredict);
 	assign PCj = {ID_PC4[15:12], ID_instruction[11:0]};
-	sixteenBitMultiplexer2to1 MUX_bneControl(IF_PC4,branch_addr,bneControl,PC1);
+	sixteenBitMultiplexer2to1 MUX_branchControl(EX_PC4, branch_addr, branchControl, PCb);
+	sixteenBitMultiplexer2to1 MUX_mispredict(IF_PC4,PCb,mispredict,PC1);
 	sixteenBitMultiplexer2to1 MUX_PCjControl(PC1,PCj,PCjControl,PC2);//******
 	sixteenBitMultiplexer2to1 MUX_EX_JRControl(PC2,BusA_ALU,EX_JRControl,PCin);
 
@@ -257,7 +291,7 @@ module cpu(clk, reset_n, readM1, address1, data1, readM2, writeM2, address2, dat
 
 //----------------------------------------------------------------------------
 	//DiscardInstruction, Stall, flush
-	DiscardInstruction discard_inst(Jump, bneControl, EX_JRControl, IF_flush, ID_flush);
+	DiscardInstruction discard_inst(Jump, mispredict, EX_JRControl, IF_flush, ID_flush);
 	StallUnit stall(MEM[0], EX_rt, ID_rs, ID_rt, opcode, PC_WriteEn, IFID_WriteEn, Stall_flush);
 	Flush flush_call(IFID_flush, ID_flush, Stall_flush, flush);
 	
